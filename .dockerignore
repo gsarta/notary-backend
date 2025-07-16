@@ -1,0 +1,30 @@
+# Directorios de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv
+venv/
+env/
+# virtualenv
+
+# Archivos específicos de Docker
+Dockerfile
+.dockerignore
+
+# Archivos de configuración y secretos
+.env
+*.key
+
+# Archivos y directorios de desarrollo/editor
+.git/
+.gitignore
+.vscode/
+*.swp
+*.bak
+*.swo
+
+# Logs y datos generados en tiempo de ejecución (local)
+*.log
+data/
