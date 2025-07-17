@@ -1,7 +1,7 @@
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint, request, jsonify, g, current_app
 from app.services.ai_agent_configuration_service import AIAgentConfigurationService
 from app.schemas.ai_agent_configuration_schema import AIAgentConfigurationSchema
-from app import db
+from app.models.base import get_db
 import uuid
 import logging
 
@@ -15,7 +15,16 @@ logger = logging.getLogger(__name__)
 # Middleware para inyectar el servicio en el contexto de la solicitud
 @bp.before_request
 def before_request():
-    g.ai_agent_service = AIAgentConfigurationService(db.session)
+    g.db_session = next(get_db())
+    g.ai_agent_service = AIAgentConfigurationService(g.db_session)
+
+
+# Función para cerrar la sesión de la base de datos al finalizar el contexto de la aplicación
+@bp.teardown_request
+def teardown_db_session(exception):
+    db_session = g.pop("db_session", None)
+    if db_session is not None:
+        db_session.close()
 
 
 @bp.route("/", methods=["GET"])
