@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, g
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
 import logging
@@ -18,14 +18,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-db = SQLAlchemy()
-
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    db = SQLAlchemy()
+
     db.init_app(app)
+
+    app.db = db
 
     with app.app_context():
         # Importar modelos para que SQLAlchemy los conozca
@@ -102,11 +104,13 @@ def create_app():
         # Importar y registrar Blueprints (controladores)
         from app.controllers import transcribe_controller
         from app.controllers import ai_agent_configurations_controller
+        from app.controllers import roles_controller
 
         # TODO: from app.controllers import roles_controller, users_controller # etc.
 
         app.register_blueprint(transcribe_controller.bp)
         app.register_blueprint(ai_agent_configurations_controller.bp)
+        app.register_blueprint(roles_controller.bp)
         # TODO: app.register_blueprint(roles_controller.bp)
         # TODO: app.register_blueprint(users_controller.bp)
 

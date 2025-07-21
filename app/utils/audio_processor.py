@@ -98,7 +98,6 @@ class AudioProcessor:
                 logger.error(
                     f"Error de la API de OpenAI al transcribir segmento {i+1}: {e}"
                 )
-                # TODO: Se podrían implementar reintentos aquí
                 raise RuntimeError(f"Error de transcripción con OpenAI Whisper: {e}")
             except Exception as e:
                 logger.error(
