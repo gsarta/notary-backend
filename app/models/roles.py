@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, String, DateTime, Text
 from sqlalchemy.dialects.postgresql import UUID
 from app.models.base import Base
+from flask_sqlalchemy import SQLAlchemy
 
 
 class Role(Base):
