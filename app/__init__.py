@@ -26,7 +26,6 @@ def create_app():
     db = SQLAlchemy()
 
     db.init_app(app)
-
     app.db = db
 
     with app.app_context():
@@ -105,12 +104,14 @@ def create_app():
         from app.controllers import transcribe_controller
         from app.controllers import ai_agent_configurations_controller
         from app.controllers import roles_controller
+        from app.controllers import users_controller
 
         # TODO: from app.controllers import roles_controller, users_controller # etc.
 
         app.register_blueprint(transcribe_controller.bp)
         app.register_blueprint(ai_agent_configurations_controller.bp)
         app.register_blueprint(roles_controller.bp)
+        app.register_blueprint(users_controller.bp)
         # TODO: app.register_blueprint(roles_controller.bp)
         # TODO: app.register_blueprint(users_controller.bp)
 
