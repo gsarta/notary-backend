@@ -1,9 +1,12 @@
 import os
-from flask import Flask, jsonify, g
+import uuid
+
+from flask import Flask, redirect, url_for, session, g, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+
+from app.config.keycloak_config import get_keycloak_openid
 from config import Config
 import logging
-
 from app.utils.azure_blob_manager import AzureBlobManager
 from app.utils.audio_processor import AudioProcessor
 from app.services.transcribe_service import TranscribeService
@@ -12,16 +15,41 @@ from app.repositories.ai_agent_configuration_repository import (
     AIAgentConfigurationRepository,
 )
 
+app = Flask(__name__)
 # Configuración básica de logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+keycloak_openid = get_keycloak_openid()
 
+@app.route('/login')
+def login():
+    auth_url = keycloak_openid.auth_url(redirect_uri="http://localhost:8000/oidc_callback")
+    return redirect(auth_url)
+
+
+@app.route('/oidc_callback')
+def callback():
+    code = request.args.get('code')
+    if code:
+        token = keycloak_openid.token(grant_type='authorization_code',
+                                      code=code,
+                                      redirect_uri="http://localhost:8000/oidc_callback")
+        session['access_token'] = token['access_token']
+        session['refresh_token'] = token['refresh_token']
+
+        next_url = session.pop('next_url', None)
+        if next_url:
+            return redirect(next_url)
+    return "Authorization failed", 400
 
 def create_app():
-    app = Flask(__name__)
     app.config.from_object(Config)
+    app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")
+    if not app.config['SECRET_KEY']:
+        logging.error("FLASK_SECRET_KEY no está configurada. ¡Esto es INSEGURO para producción!")
+        app.config['SECRET_KEY'] = 'fallback_secret_key_for_dev_only'
 
     db = SQLAlchemy()
 
