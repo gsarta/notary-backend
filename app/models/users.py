@@ -25,6 +25,7 @@ class User(Base):
     role = relationship("Role")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    templates_created = relationship("Template", back_populates="creator")
 
     def __repr__(self):
         return f"<User(username='{self.username}', email='{self.email}')>"
