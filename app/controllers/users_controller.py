@@ -41,6 +41,7 @@ def get_all_users():
                 "role_name": (
                     user.role.role_name if user.role else None
                 ),  # Asegura que se muestre el nombre del rol
+                "oauth_id": user.oauth_id,
                 "created_at": user.created_at.isoformat(),
                 "updated_at": user.updated_at.isoformat(),
             }
@@ -71,6 +72,7 @@ def get_user_by_id(user_id: uuid.UUID):
                         "last_name": user.last_name,
                         "is_active": user.is_active,
                         "role_id": str(user.role_id),
+                        "oauth_id": user.oauth_id,
                         "role_name": user.role.role_name if user.role else None,
                         "created_at": user.created_at.isoformat(),
                         "updated_at": user.updated_at.isoformat(),
@@ -96,6 +98,7 @@ def create_user():
     role_id = data.get("role_id")
     first_name = data.get("first_name")
     last_name = data.get("last_name")
+    password = data.get("password")
     is_active = data.get("is_active", True)
 
     if not username or not email or not role_id:
@@ -119,7 +122,13 @@ def create_user():
 
     try:
         new_user = g.user_service.create_user(
-            username, email, role_id_uuid, first_name, last_name, is_active
+            username=username,
+            email=email,
+            role_id=role_id_uuid,
+            first_name=first_name,
+            last_name=last_name,
+            is_active=is_active,
+            password=password
         )
         return (
             jsonify(
@@ -140,7 +149,6 @@ def create_user():
     except Exception as e:
         logger.exception("Error inesperado al crear usuario.")
         return jsonify({"message": "Error interno del servidor al crear usuario."}), 500
-
 
 @bp.route("/<uuid:user_id>", methods=["PATCH"])
 def update_user(user_id: uuid.UUID):
@@ -205,10 +213,8 @@ def update_user(user_id: uuid.UUID):
 def delete_user(user_id: uuid.UUID):
     """Elimina un usuario."""
     try:
-        deleted = g.user_service.delete_user(user_id)
-        if deleted:
-            return jsonify({"message": "Usuario eliminado exitosamente"}), 204
-        return jsonify({"message": "Usuario no encontrado o no se pudo eliminar"}), 404
+        g.user_service.delete_user(user_id)
+        return "", 204
     except ValueError as e:
         return jsonify({"message": str(e)}), 400
     except RuntimeError as e:

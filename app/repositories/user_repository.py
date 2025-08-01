@@ -9,19 +9,19 @@ class UserRepository:
 
     def get_by_id(self, user_id: uuid.UUID) -> User | None:
         """Obtiene un usuario por su ID."""
-        return self.db_session.query(User).filter_by(user_id=user_id).first()
+        return self.db_session.query(User).filter_by(user_id=user_id, is_active=True).first()
 
     def get_by_username(self, username: str) -> User | None:
         """Obtiene un usuario por su nombre de usuario."""
-        return self.db_session.query(User).filter_by(username=username).first()
+        return self.db_session.query(User).filter_by(username=username, is_active=True).first()
 
     def get_by_email(self, email: str) -> User | None:
         """Obtiene un usuario por su correo electrónico."""
-        return self.db_session.query(User).filter_by(email=email).first()
+        return self.db_session.query(User).filter_by(email=email, is_active=True).first()
 
     def get_all(self) -> list[User]:
         """Obtiene todos los usuarios."""
-        return self.db_session.query(User).all()
+        return self.db_session.query(User).filter_by(is_active=True).all()
 
     def create(self, user: User) -> User:
         """Crea un nuevo usuario en la base de datos."""

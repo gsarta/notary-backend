@@ -5,6 +5,9 @@ from app.repositories.role_repository import RoleRepository
 from app.models.users import User
 import logging
 
+from app.utils.keycloak_service import create_user_in_keycloak, validate_user_email_in_keycloak, \
+    delete_user_in_keycloak_by_oauth_id
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,10 +37,11 @@ class UserService:
         self,
         username: str,
         email: str,
+        password: str,
         role_id: uuid.UUID,
         first_name: str = None,
         last_name: str = None,
-        is_active: bool = True,
+        is_active: bool = True
     ) -> User:
         """
         Crea un nuevo usuario.
@@ -52,6 +56,19 @@ class UserService:
         if not self.role_repo.get_by_id(role_id):
             raise ValueError(f"El role_id '{role_id}' no es válido.")
 
+        validate_user_email_in_keycloak(email=email)
+
+        keycloak_user_data = {
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
+            "password": password
+        }
+
+        oauth_id = create_user_in_keycloak(
+            user_data=keycloak_user_data
+        )
+
         new_user = User(
             username=username,
             email=email,
@@ -59,9 +76,14 @@ class UserService:
             last_name=last_name,
             is_active=is_active,
             role_id=role_id,
+            oauth_id=oauth_id
         )
         try:
+
             return self.user_repo.create(new_user)
+        except ValueError as e:
+            logger.error(f"Error al crear usuario '{username}': {e}")
+            raise ValueError(e)
         except Exception as e:
             self.db_session.rollback()
             logger.error(f"Error al crear usuario '{username}': {e}", exc_info=True)
@@ -123,16 +145,22 @@ class UserService:
             logger.error(f"Error al actualizar usuario '{user_id}': {e}", exc_info=True)
             raise RuntimeError("Error al actualizar el usuario en la base de datos.")
 
-    def delete_user(self, user_id: uuid.UUID) -> bool:
+    def delete_user(self, user_id: uuid.UUID) -> str:
         """Elimina un usuario por su ID."""
         # TODO: Considerar lógica para evitar eliminar usuarios si tienen datos asociados críticos (ej. transcripciones).
         try:
-            deleted = self.user_repo.delete(user_id)
-            if not deleted:
+            user = self.user_repo.get_by_id(user_id)
+            if not user:
                 raise ValueError(
                     f"Usuario con ID '{user_id}' no encontrado o no se pudo eliminar."
                 )
-            return deleted
+            user_oauth_id = user.oauth_id
+            update_data = {"is_active": False}
+            self.user_repo.update(user_id, update_data)
+            delete_user_in_keycloak_by_oauth_id(
+                oauth_id=user_oauth_id
+            )
+            return ""
         except Exception as e:
             self.db_session.rollback()
             logger.error(f"Error al eliminar usuario '{user_id}': {e}", exc_info=True)

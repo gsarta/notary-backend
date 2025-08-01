@@ -17,6 +17,7 @@ class User(Base):
     first_name = Column(String(100))
     last_name = Column(String(100))
     is_active = Column(Boolean, default=True)
+    oauth_id = Column(String)
     role_id = Column(
         UUID(as_uuid=True),
         ForeignKey("notary.roles.role_id", ondelete="RESTRICT"),
