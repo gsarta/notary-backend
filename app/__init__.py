@@ -14,6 +14,7 @@ from app.services.ai_agent_configuration_service import AIAgentConfigurationServ
 from app.repositories.ai_agent_configuration_repository import (
     AIAgentConfigurationRepository,
 )
+from app.models.document_type import DocumentType
 
 app = Flask(__name__)
 # Configuración básica de logging
@@ -23,33 +24,41 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 keycloak_openid = get_keycloak_openid()
 
-@app.route('/login')
+
+@app.route("/login")
 def login():
-    auth_url = keycloak_openid.auth_url(redirect_uri="http://localhost:8000/oidc_callback")
+    auth_url = keycloak_openid.auth_url(
+        redirect_uri="http://localhost:8000/oidc_callback"
+    )
     return redirect(auth_url)
 
 
-@app.route('/oidc_callback')
+@app.route("/oidc_callback")
 def callback():
-    code = request.args.get('code')
+    code = request.args.get("code")
     if code:
-        token = keycloak_openid.token(grant_type='authorization_code',
-                                      code=code,
-                                      redirect_uri="http://localhost:8000/oidc_callback")
-        session['access_token'] = token['access_token']
-        session['refresh_token'] = token['refresh_token']
+        token = keycloak_openid.token(
+            grant_type="authorization_code",
+            code=code,
+            redirect_uri="http://localhost:8000/oidc_callback",
+        )
+        session["access_token"] = token["access_token"]
+        session["refresh_token"] = token["refresh_token"]
 
-        next_url = session.pop('next_url', None)
+        next_url = session.pop("next_url", None)
         if next_url:
             return redirect(next_url)
     return "Authorization failed", 400
 
+
 def create_app():
     app.config.from_object(Config)
     app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")
-    if not app.config['SECRET_KEY']:
-        logging.error("FLASK_SECRET_KEY no está configurada. ¡Esto es INSEGURO para producción!")
-        app.config['SECRET_KEY'] = 'fallback_secret_key_for_dev_only'
+    if not app.config["SECRET_KEY"]:
+        logging.error(
+            "FLASK_SECRET_KEY no está configurada. ¡Esto es INSEGURO para producción!"
+        )
+        app.config["SECRET_KEY"] = "fallback_secret_key_for_dev_only"
 
     db = SQLAlchemy()
 
@@ -133,6 +142,11 @@ def create_app():
         from app.controllers import ai_agent_configurations_controller
         from app.controllers import roles_controller
         from app.controllers import users_controller
+        from app.controllers import template_controller
+        from app.controllers import template_section_composition_controller
+        from app.controllers import template_section_controller
+        from app.controllers import document_types_controller
+        from app.controllers import document_controller
 
         # TODO: from app.controllers import roles_controller, users_controller # etc.
 
@@ -140,6 +154,12 @@ def create_app():
         app.register_blueprint(ai_agent_configurations_controller.bp)
         app.register_blueprint(roles_controller.bp)
         app.register_blueprint(users_controller.bp)
+        app.register_blueprint(template_controller.bp)
+        app.register_blueprint(template_section_composition_controller.bp)
+        app.register_blueprint(template_section_controller.bp)
+        app.register_blueprint(document_types_controller.bp)
+        app.register_blueprint(document_controller.bp)
+
         # TODO: app.register_blueprint(roles_controller.bp)
         # TODO: app.register_blueprint(users_controller.bp)
 
